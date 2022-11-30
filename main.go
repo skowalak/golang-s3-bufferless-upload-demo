@@ -2,38 +2,14 @@ package main
 
 import (
 	"context"
+	"file-upload-demo/aws"
+	"file-upload-demo/config"
 	"file-upload-demo/httphandler"
-	"io/ioutil"
 	"net/http"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
-
-type ApplicationConfig struct {
-	Address string `yaml:"address"`
-}
-
-type Config struct {
-	ApplicationConfig `yaml:"application"`
-}
-
-func ProvideConfig() *Config {
-	conf := Config{}
-	data, err := ioutil.ReadFile("config/base.yaml")
-	if err != nil {
-		panic(err)
-	}
-
-	err = yaml.Unmarshal([]byte(data), &conf)
-	if err != nil {
-		// :(
-		panic(err)
-	}
-
-	return &conf
-}
 
 func ProvideLogger() *zap.SugaredLogger {
 	logger, _ := zap.NewProduction()
@@ -45,15 +21,16 @@ func ProvideLogger() *zap.SugaredLogger {
 
 func main() {
 	fx.New(
-		fx.Provide(ProvideConfig),
+		fx.Provide(config.ProvideConfig),
 		fx.Provide(ProvideLogger),
 		fx.Provide(http.NewServeMux),
+		fx.Provide(aws.NewS3),
 		fx.Invoke(httphandler.New),
-		fx.Invoke(registerHooks),
+		fx.Invoke(runApp),
 	).Run()
 }
 
-func registerHooks(lifecycle fx.Lifecycle, logger *zap.SugaredLogger, cfg *Config, mux *http.ServeMux) {
+func runApp(lifecycle fx.Lifecycle, logger *zap.SugaredLogger, cfg *config.Config, mux *http.ServeMux) {
 	lifecycle.Append(
 		fx.Hook{
 			OnStart: func(context.Context) error {
