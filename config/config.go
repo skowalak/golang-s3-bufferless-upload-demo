@@ -1,37 +1,36 @@
 package config
 
 import (
-	"io/ioutil"
-
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 )
 
 type ApplicationConfig struct {
-	Address string `yaml:"address"`
+	Address string `mapstructure:"address"`
 }
 
 type AwsConfig struct {
-	Bucket    string `yaml:"bucket"`
-	Region    string `yaml:"region"`
-	KeyId     string `yaml:"aws-access-key-id"`
-	KeySecret string `yaml:"aws-access-key-secret"`
+	Bucket    string `mapstructure:"bucket"`
+	Region    string `mapstructure:"region"`
+	KeyId     string `mapstructure:"aws-access-key-id"`
+	KeySecret string `mapstructure:"aws-access-key-secret"`
 }
 
 type Config struct {
-	ApplicationConfig `yaml:"application"`
-	AwsConfig         `yaml:"aws"`
+	ApplicationConfig `mapstructure:"application"`
+	AwsConfig         `mapstructure:"aws"`
 }
 
 func ProvideConfig() *Config {
-	conf := Config{}
-	data, err := ioutil.ReadFile("config/base.yaml")
+	viper.SetConfigName("base")
+	viper.AddConfigPath("./config")
+	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	err = yaml.Unmarshal([]byte(data), &conf)
+	conf := Config{}
+	err = viper.Unmarshal(&conf)
 	if err != nil {
-		// :(
 		panic(err)
 	}
 
